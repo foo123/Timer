@@ -13,13 +13,15 @@ var MINUTE = 60, HOUR = 60*MINUTE, DAY = 24*HOUR,
     fmt_re = /%([^%]+)%/g
 ;
 
-function days_hours_minutes_seconds( t )
+function days_hours_minutes_seconds( t, fmt )
 {
-  var d, h, m;
-  d = (t/DAY)|0; t -= d*DAY;
-  h = (t/HOUR)|0; t -= h*HOUR;
-  m = (t/MINUTE)|0; t -= m*MINUTE;
-  return {d: d, h: h, m: m, s: t|0};
+  var d=0, h=0, m=0, s=0;
+  fmt = fmt || {days:true, hours:true, minutes:true, seconds:true};
+  if ( fmt.days ) d = (t/DAY)|0; t -= d*DAY;
+  if ( fmt.hours ) h = (t/HOUR)|0; t -= h*HOUR;
+  if ( fmt.minutes ) m = (t/MINUTE)|0; t -= m*MINUTE;
+  if ( fmt.seconds ) s = t|0;
+  return {d:d, h:h, m:m, s:s};
 }
 function create_timer( timer )
 {
@@ -139,31 +141,39 @@ Timer.prototype = {
         return self;
     }
     
-    ,getTime: function( ) {
-        return days_hours_minutes_seconds( this.time );
+    ,getTime: function( fmt ) {
+        return days_hours_minutes_seconds( this.time, fmt );
     }
 };
 
 var fmt_re = /%([^%]+)%/g;
 
 $.Timer = function( el, options ) {
-    var self = this, $el = $(el), fmt;
-    options = $.extend({
-        'format': $el.attr('data-timer-format') || '%dd%:%hh%:%mm%:%ss%',
-        'type': $el.attr('data-timer-type') || 'down',
-        'duration': parseInt($el.attr('data-timer-duration'),10) || 10,
-        'granularity': parseInt($el.attr('data-timer-granularity'),10) || 1
-    }, options||{});
+    var self = this, $el = $(el), fmt, dfmt;
+    options = options || {};
+    var format = $el.attr('data-timer-format') || options.format || '%dd%:%hh%:%mm%:%ss%';
+    var type = $el.attr('data-timer-type') || options.type || 'down';
+    var duration = parseInt($el.attr('data-timer-duration'),10) || options.duration || 10;
+    var granularity = parseInt($el.attr('data-timer-granularity'),10) || options.granularity || 1;
     
-    fmt = options.format;
+    fmt = format;
     
     $.data( el, 'Timer', self );
     
     if ( 'function' !== typeof fmt )
     {
+        dfmt = {days:false, hours:false, minutes:false, seconds:false};
+        fmt.replace(fmt_re, function(g0, g1){
+            if ( 'dd' === g1 || 'd' === g1 ) dfmt.days = true;
+            else if ( 'hh' === g1 || 'h' === g1 ) dfmt.hours = true;
+            else if ( 'mm' === g1 || 'm' === g1 ) dfmt.minutes = true;
+            else if ( 'ss' === g1 || 's' === g1 ) dfmt.seconds = true;
+            return g0;
+        });
+        var prop = $el.is('input,textarea') ? 'val' : 'html';
         fmt = function( $el, timer ) {
-            var t = timer.getTime( );
-            $el.html(options.format.replace(fmt_re, function( g0, g1 ){
+            var t = timer.getTime( dfmt );
+            $el[prop](format.replace(fmt_re, function( g0, g1 ){
                 if ( 'dd' === g1 ) return 10 > t.d ? '0'+t.d : t.d;
                 else if ( 'd' === g1 ) return t.d;
                 else if ( 'hh' === g1 ) return 10 > t.h ? '0'+t.h : t.h;
@@ -181,7 +191,7 @@ $.Timer = function( el, options ) {
         self.tick = null;
         $.removeData( el, 'Timer' );
     };
-    self.tick = new Timer( options.type, options.duration, options.granularity, function( timer ){
+    self.tick = new Timer( type, duration, granularity, function( timer ){
         fmt( $el, timer );
         $el.trigger(timer.running ? 'timer-tick' : 'timer-finished');
     });
