@@ -126,6 +126,15 @@ Timer.prototype = {
         return self;
     }
     
+    ,extend: function( duration ) {
+        var self = this;
+        if ( self.timer )
+        {
+            self.duration += duration|0;
+        }
+        return self;
+    }
+    
     ,reset: function( duration ) {
         var self = this;
         if ( self.timer )
