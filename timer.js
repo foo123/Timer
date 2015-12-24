@@ -162,7 +162,7 @@ $.Timer = function( el, options ) {
     options = options || {};
     var format = $el.attr('data-timer-format') || options.format || '%dd%:%hh%:%mm%:%ss%';
     var type = $el.attr('data-timer-type') || options.type || 'down';
-    var duration = parseInt($el.attr('data-timer-duration'),10) || options.duration || 10;
+    var duration = parseInt($el.attr('data-timer-duration'),10) || options.duration || 0;
     var granularity = parseInt($el.attr('data-timer-granularity'),10) || options.granularity || 1;
     
     fmt = format;
